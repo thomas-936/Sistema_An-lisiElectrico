@@ -1,0 +1,1 @@
+print("Analizador De Instalaciones Electricas")
