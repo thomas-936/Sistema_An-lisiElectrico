@@ -50,7 +50,7 @@ boton2.pack(pady=10)
 boton3 = tk.Button(raiz, text="3. Calcular Factor de Relleno", width=30, height=2, command=abrir_factor_relleno)
 boton3.pack(pady=10)
 
-boton4 = tk.Button(raiz, text="4. Conversión de Unidades", width=30, height=2, command=abrir_conversion_unidades)
+boton4 = tk.Button(raiz, text="4. Conversión de Unidades electricas ", width=30, height=2, command=abrir_conversion_unidades)
 boton4.pack(pady=10)
 
 raiz.mainloop()
