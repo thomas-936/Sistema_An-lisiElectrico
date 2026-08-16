@@ -37,20 +37,23 @@ def abrir_conversion_unidades():
 raiz = tk.Tk()
 raiz.title("Analizador de Instalaciones Electricas")
 raiz.geometry("400x400")
+raiz.config(bg="#2c3e50")
 
-titulo = tk.Label(raiz, text="Analizador de Instalaciones Eléctricas", font=("Arial", 14, "bold"))
+titulo = tk.Label(raiz, text="Analizador de Instalaciones Electricas",
+                   font=("Arial", 14, "bold"),
+                   bg="#2c3e50", fg="white")
 titulo.pack(pady=20)
 
-boton1 = tk.Button(raiz, text="1. Calculadora Eléctrica", width=30, height=2, command=abrir_calculadora_electrica, bg="#3498db", fg="white")
+boton1 = tk.Button(raiz, text="1. Calculadora Eléctrica", width=30, height=2, command=abrir_calculadora_electrica, bg="#1eb851", fg="white")
 boton1.pack(pady=10)
 
-boton2 = tk.Button(raiz, text="2. Caida de Tensión", width=30, height=2, command=abrir_caida_tension)
+boton2 = tk.Button(raiz, text="2. Caida de Tensión", width=30, height=2, command=abrir_caida_tension, bg="#c4d811", fg="white")
 boton2.pack(pady=10)
 
-boton3 = tk.Button(raiz, text="3. Calcular Factor de Relleno", width=30, height=2, command=abrir_factor_relleno)
+boton3 = tk.Button(raiz, text="3. Calcular Factor de Relleno", width=30, height=2, command=abrir_factor_relleno, bg="#b11921", fg="white")
 boton3.pack(pady=10)
 
-boton4 = tk.Button(raiz, text="4. Conversión de Unidades electricas ", width=30, height=2, command=abrir_conversion_unidades)
+boton4 = tk.Button(raiz, text="4. Conversión de Unidades electricas ", width=30, height=2, command=abrir_conversion_unidades, bg="#1f40c3", fg="white")
 boton4.pack(pady=10)
 
 raiz.mainloop()
