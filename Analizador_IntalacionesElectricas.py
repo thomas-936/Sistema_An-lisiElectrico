@@ -36,13 +36,13 @@ def abrir_conversion_unidades():
 
 raiz = tk.Tk()
 raiz.title("Analizador de Instalaciones Electricas")
-raiz.geometry("400x400")
+raiz.geometry("600x600")
 raiz.config(bg="#2c3e50")
 
-titulo = tk.Label(raiz, text="Analizador de Instalaciones Electricas",
-                   font=("Arial", 14, "bold"),
+titulo = tk.Label(raiz, text="Analizador de Instalaciones Eléctricas",
+                   font=("Arial", 20, "bold"),
                    bg="#2c3e50", fg="white")
-titulo.pack(pady=20)
+titulo.pack(pady=70)
 
 boton1 = tk.Button(raiz, text="1. Calculadora Eléctrica", width=30, height=2, command=abrir_calculadora_electrica, bg="#1eb851", fg="white")
 boton1.pack(pady=10)
