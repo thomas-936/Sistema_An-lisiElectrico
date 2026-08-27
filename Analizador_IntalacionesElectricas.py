@@ -1,4 +1,3 @@
-import re
 import tkinter as tk
 from tkinter import messagebox, ttk
 import math
