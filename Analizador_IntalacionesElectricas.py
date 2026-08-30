@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import math
+import sqlite3
+from datetime import datetime
 
 # Tabla de resistividad de los materiales (Ohm*mm2/m a 20 grados C)
 RESISTIVIDAD = {
@@ -89,6 +91,39 @@ def limite_relleno(cantidad_conductores):
         return 30
     else:
         return 40
+
+
+NOMBRE_BD = "historial.db"
+
+
+def conectar_bd():
+    # Se conecta al archivo historial.db (lo crea si no existe) y se asegura
+    # de que la tabla "historial" exista
+    conexion = sqlite3.connect(NOMBRE_BD)
+    cursor = conexion.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS historial (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fecha TEXT,
+            tipo TEXT,
+            resumen TEXT,
+            estado TEXT
+        )
+    """)
+    conexion.commit()
+    return conexion
+
+
+def guardar_historial(tipo, resumen, estado):
+    conexion = conectar_bd()
+    cursor = conexion.cursor()
+    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute(
+        "INSERT INTO historial (fecha, tipo, resumen, estado) VALUES (?, ?, ?, ?)",
+        (fecha, tipo, resumen, estado)
+    )
+    conexion.commit()
+    conexion.close()
 
 
 def abrir_calculadora_electrica():
@@ -398,6 +433,7 @@ def abrir_caida_tension():
             texto_resultado += f"\nCalibre sugerido: {sugerencia}"
 
         resultado_label.config(text=texto_resultado, fg=color_estado)
+        guardar_historial("Caída de Tensión", texto_resultado, estado)
 
     def limpiar():
         entry_v.delete(0, tk.END)
@@ -538,6 +574,7 @@ def abrir_factor_relleno():
             f"Tubería recomendada: {tuberia_recomendada}"
         )
         color_estado = "#1eb851"
+        estado_historial = "Calculado (sin verificar tubería específica)"
 
         tuberia = combo_tuberia.get()
         if tuberia != "":
@@ -549,6 +586,7 @@ def abrir_factor_relleno():
             else:
                 estado = "NO CUMPLE"
                 color_estado = "#b11921"
+            estado_historial = estado
             texto_resultado += (
                 f"\n\nVerificación de la tubería {tuberia}:\n"
                 f"Área interna (Tabla 4.5): {area_tubo} mm²\n"
@@ -557,6 +595,7 @@ def abrir_factor_relleno():
             )
 
         resultado_label.config(text=texto_resultado, fg=color_estado)
+        guardar_historial("Factor de Relleno", texto_resultado, estado_historial)
 
     def limpiar():
         for entry_cant, combo_cal, entry_area in filas:
@@ -583,6 +622,94 @@ def abrir_conversion_unidades():
     tk.Label(ventana, text="(Aqui va el contenido de esta seccion)").pack()
 
 
+def abrir_historial():
+    ventana = tk.Toplevel(raiz)
+    ventana.title("Historial de Cálculos")
+    ventana.geometry("750x550")
+    ventana.bind("<Escape>", lambda evento: ventana.destroy())
+    ventana.focus_force()
+
+    tk.Label(ventana, text="Historial de Cálculos", font=("Arial", 14, "bold")).pack(pady=10)
+
+    frame_tabla = tk.Frame(ventana)
+    frame_tabla.pack(fill="both", expand=True, padx=10, pady=5)
+
+    columnas = ("id", "fecha", "tipo", "estado")
+    tabla = ttk.Treeview(frame_tabla, columns=columnas, show="headings", height=12)
+    tabla.heading("id", text="ID")
+    tabla.heading("fecha", text="Fecha y hora")
+    tabla.heading("tipo", text="Tipo de cálculo")
+    tabla.heading("estado", text="Estado")
+    tabla.column("id", width=40, anchor="center")
+    tabla.column("fecha", width=160, anchor="center")
+    tabla.column("tipo", width=180, anchor="center")
+    tabla.column("estado", width=120, anchor="center")
+    tabla.pack(side="left", fill="both", expand=True)
+
+    scrollbar = tk.Scrollbar(frame_tabla, orient="vertical", command=tabla.yview)
+    tabla.configure(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side="right", fill="y")
+
+    tk.Label(ventana, text="Detalle del registro seleccionado:",
+             font=("Arial", 9, "bold")).pack(anchor="w", padx=10, pady=(10, 0))
+
+    detalle_texto = tk.Text(ventana, height=8, wrap="word", font=("Consolas", 9))
+    detalle_texto.pack(fill="x", padx=10, pady=5)
+
+    registros = {}  # id -> resumen completo, para mostrar el detalle sin volver a consultar la BD
+
+    def cargar_datos():
+        for fila in tabla.get_children():
+            tabla.delete(fila)
+        registros.clear()
+
+        conexion = conectar_bd()
+        cursor = conexion.cursor()
+        cursor.execute("SELECT id, fecha, tipo, resumen, estado FROM historial ORDER BY id DESC")
+        filas = cursor.fetchall()
+        conexion.close()
+
+        for id_registro, fecha, tipo, resumen, estado in filas:
+            tabla.insert("", "end", values=(id_registro, fecha, tipo, estado))
+            registros[id_registro] = resumen
+
+        detalle_texto.delete("1.0", tk.END)
+
+    def mostrar_detalle(evento):
+        seleccion = tabla.selection()
+        if not seleccion:
+            return
+        id_registro = tabla.item(seleccion[0])["values"][0]
+        detalle_texto.delete("1.0", tk.END)
+        detalle_texto.insert("1.0", registros.get(id_registro, ""))
+
+    tabla.bind("<<TreeviewSelect>>", mostrar_detalle)
+
+    def borrar_historial():
+        confirmar = messagebox.askyesno(
+            "Confirmar borrado",
+            "¿Seguro que quieres borrar TODO el historial? Esta acción no se puede deshacer."
+        )
+        if not confirmar:
+            return
+        conexion = conectar_bd()
+        cursor = conexion.cursor()
+        cursor.execute("DELETE FROM historial")
+        conexion.commit()
+        conexion.close()
+        cargar_datos()
+
+    botones_frame = tk.Frame(ventana)
+    botones_frame.pack(pady=10)
+
+    tk.Button(botones_frame, text="Actualizar", command=cargar_datos,
+              bg="#1f40c3", fg="white", width=12).grid(row=0, column=0, padx=5)
+    tk.Button(botones_frame, text="Borrar Historial", command=borrar_historial,
+              bg="#b11921", fg="white", width=14).grid(row=0, column=1, padx=5)
+
+    cargar_datos()
+
+
 raiz = tk.Tk()
 raiz.title("Analizador de Instalaciones Eléctricas")
 raiz.state("zoomed")
@@ -604,5 +731,8 @@ boton3.pack(pady=10)
 
 boton4 = tk.Button(raiz, text="4. Conversión de Unidades ", width=30, height=2, command=abrir_conversion_unidades, bg="#1f40c3", fg="white")
 boton4.pack(pady=10)
+
+boton5 = tk.Button(raiz, text="5. Ver Historial", width=30, height=2, command=abrir_historial, bg="#6c3483", fg="white")
+boton5.pack(pady=10)
 
 raiz.mainloop()
