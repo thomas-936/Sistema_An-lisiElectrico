@@ -44,6 +44,52 @@ TABLA_AMPACIDAD = {
 
 TIPOS_AISLAMIENTO = ["TW", "THW", "THHN/THWN"]
 
+# Tabla 4.5 del curso: area interna real de la tuberia conduit PVC (mm2)
+TABLA_TUBERIA = {
+    '1/2"': 260,
+    '3/4"': 438,
+    '1"': 723,
+    '1 1/4"': 1170,
+    '1 1/2"': 1534,
+    '2"': 2397,
+    '3"': 5350,
+}
+
+# Lista ordenada de menor a mayor area, para recorrerla al buscar una tuberia adecuada
+ORDEN_TUBERIA = ['1/2"', '3/4"', '1"', '1 1/4"', '1 1/2"', '2"', '3"']
+
+# Diametro nominal de cada tuberia en pulgadas (para el metodo de calculo del diametro minimo)
+TUBERIA_PULGADAS = {
+    '1/2"': 0.5, '3/4"': 0.75, '1"': 1.0, '1 1/4"': 1.25,
+    '1 1/2"': 1.5, '2"': 2.0, '3"': 3.0,
+}
+
+MM2_POR_PULGADA2 = 645.2
+
+# Tabla 4.7 del curso: area de los conductores CON aislamiento TW/THW, por conductor (mm2)
+# (esta area es mas grande que el area del cobre desnudo, porque incluye el aislamiento)
+TABLA_AREA_AISLADA = {
+    "14 AWG": 9.24,
+    "12 AWG": 12.0,
+    "10 AWG": 16.1,
+    "8 AWG": 29.2,
+    "6 AWG": 48.0,
+    "4 AWG": 64.2,
+    "2 AWG": 87.8,
+}
+
+ORDEN_CALIBRE_RELLENO = ["14 AWG", "12 AWG", "10 AWG", "8 AWG", "6 AWG", "4 AWG", "2 AWG"]
+
+
+def limite_relleno(cantidad_conductores):
+    # Factores de relleno aceptados por el RETIE (segun el material del curso)
+    if cantidad_conductores == 1:
+        return 55
+    elif cantidad_conductores == 2:
+        return 30
+    else:
+        return 40
+
 
 def abrir_calculadora_electrica():
     ventana = tk.Toplevel(raiz)
@@ -229,6 +275,33 @@ def abrir_caida_tension():
     entry_max.grid(row=8, column=1)
     entry_max.insert(0, "3")
 
+    # Orden completo de campos (incluye los Entry y los Combobox) para navegar con Enter
+    campos = [entry_v, entry_p, entry_i, combo_material, entry_l,
+              combo_calibre, entry_area_manual, combo_aislamiento, entry_max]
+
+    def mover_siguiente(evento):
+        indice_actual = campos.index(evento.widget)
+        if indice_actual < len(campos) - 1:
+            campos[indice_actual + 1].focus_set()
+        return "break"
+
+    def mover_anterior(evento):
+        indice_actual = campos.index(evento.widget)
+        if indice_actual > 0:
+            campos[indice_actual - 1].focus_set()
+        return "break"
+
+    # Enter mueve al siguiente campo, sin importar si es Entry o Combobox
+    for campo in campos:
+        campo.bind("<Return>", mover_siguiente)
+
+    # Las flechas arriba/abajo solo mueven el foco en los Entry (casillas de texto),
+    # porque en los Combobox esas mismas flechas sirven para cambiar la opción elegida
+    campos_entry = [entry_v, entry_p, entry_i, entry_l, entry_area_manual, entry_max]
+    for campo in campos_entry:
+        campo.bind("<Down>", mover_siguiente)
+        campo.bind("<Up>", mover_anterior)
+
     resultado_label = tk.Label(ventana, text="", font=("Arial", 10), fg="#1eb851", justify="left")
     resultado_label.pack(pady=15)
 
@@ -350,9 +423,156 @@ def abrir_caida_tension():
 def abrir_factor_relleno():
     ventana = tk.Toplevel(raiz)
     ventana.title("Factor de Relleno")
-    ventana.geometry("400x300")
-    tk.Label(ventana, text="Factor de Relleno", font=("Arial", 14, "bold")).pack(pady=20)
-    tk.Label(ventana, text="(Aqui va el contenido de esta seccion)").pack()
+    ventana.geometry("520x700")
+    ventana.bind("<Escape>", lambda evento: ventana.destroy())
+    ventana.focus_force()
+
+    tk.Label(ventana, text="Factor de Relleno de Tubería Conduit", font=("Arial", 14, "bold")).pack(pady=10)
+    tk.Label(ventana, text="Agrega un renglón por cada calibre distinto dentro de la tubería (TW/THW)",
+             font=("Arial", 9)).pack(pady=(0, 10))
+
+    encabezado = tk.Frame(ventana)
+    encabezado.pack()
+    tk.Label(encabezado, text="Cantidad", width=12, anchor="w").grid(row=0, column=0, padx=5)
+    tk.Label(encabezado, text="Calibre AWG", width=14, anchor="w").grid(row=0, column=1, padx=5)
+    tk.Label(encabezado, text="O área manual (mm²)", width=18, anchor="w").grid(row=0, column=2, padx=5)
+
+    frame_filas = tk.Frame(ventana)
+    frame_filas.pack(pady=5)
+
+    filas = []  # cada elemento: (entry_cantidad, combo_calibre, entry_area_manual)
+
+    def agregar_fila():
+        idx = len(filas)
+        entry_cant = tk.Entry(frame_filas, width=12)
+        entry_cant.grid(row=idx, column=0, padx=5, pady=3)
+
+        combo_cal = ttk.Combobox(frame_filas, values=ORDEN_CALIBRE_RELLENO, width=12, state="readonly")
+        combo_cal.grid(row=idx, column=1, padx=5, pady=3)
+        combo_cal.current(1)
+
+        entry_area = tk.Entry(frame_filas, width=16)
+        entry_area.grid(row=idx, column=2, padx=5, pady=3)
+
+        filas.append((entry_cant, combo_cal, entry_area))
+        entry_cant.focus_set()
+
+    tk.Button(ventana, text="+ Agregar otro calibre", command=agregar_fila,
+              bg="#1f40c3", fg="white").pack(pady=5)
+
+    agregar_fila()  # primer renglón visible desde que se abre la ventana
+
+    tk.Label(ventana, text="Tubería a verificar (opcional):", font=("Arial", 9)).pack(pady=(10, 0))
+    combo_tuberia = ttk.Combobox(ventana, values=ORDEN_TUBERIA, width=13, state="readonly")
+    combo_tuberia.pack(pady=5)
+
+    resultado_label = tk.Label(ventana, text="", font=("Arial", 10), fg="#1eb851", justify="left")
+    resultado_label.pack(pady=15)
+
+    def obtener(entry):
+        texto = entry.get().strip()
+        if texto == "":
+            return None
+        try:
+            return float(texto)
+        except ValueError:
+            return None
+
+    def calcular():
+        area_total = 0.0
+        total_conductores = 0
+        detalle_lineas = []
+
+        for entry_cant, combo_cal, entry_area in filas:
+            cantidad = obtener(entry_cant)
+            if cantidad is None:
+                continue  # renglon vacio, se ignora
+            if cantidad <= 0:
+                messagebox.showwarning("Dato inválido", "La cantidad debe ser mayor a 0.")
+                return
+
+            cantidad = int(cantidad)
+            area_manual = obtener(entry_area)
+            calibre = combo_cal.get()
+
+            if area_manual is not None:
+                area_unitaria = area_manual
+                etiqueta_calibre = f"{calibre} (área manual)" if calibre else "área manual"
+            else:
+                if calibre == "":
+                    messagebox.showwarning("Faltan datos", "Selecciona un calibre o escribe el área manual.")
+                    return
+                area_unitaria = TABLA_AREA_AISLADA[calibre]
+                etiqueta_calibre = calibre
+
+            area_grupo = area_unitaria * cantidad
+            area_total += area_grupo
+            total_conductores += cantidad
+            detalle_lineas.append(f"{cantidad} x {etiqueta_calibre} = {area_grupo:.2f} mm²")
+
+        if total_conductores == 0:
+            messagebox.showwarning("Faltan datos", "Ingresa al menos un renglón con cantidad y calibre.")
+            return
+
+        limite = limite_relleno(total_conductores)
+
+        # Metodo del curso: AT = Ac / Fr  ->  area minima de tuberia requerida
+        area_minima_mm2 = area_total / (limite / 100)
+        area_minima_in2 = area_minima_mm2 / MM2_POR_PULGADA2
+        diametro_necesario_in = 2 * math.sqrt(area_minima_in2 / math.pi)
+
+        tuberia_recomendada = None
+        for talla in ORDEN_TUBERIA:
+            if TUBERIA_PULGADAS[talla] >= diametro_necesario_in:
+                tuberia_recomendada = talla
+                break
+        if tuberia_recomendada is None:
+            tuberia_recomendada = "Ninguna de la tabla alcanza, se necesita una tubería mayor"
+
+        texto_resultado = (
+            "Detalle de conductores:\n" + "\n".join(detalle_lineas) +
+            f"\n\nTotal de conductores: {total_conductores}\n"
+            f"Área total de conductores (Ac): {area_total:.2f} mm²\n"
+            f"Factor de relleno máximo permitido: {limite} %\n"
+            f"Diámetro mínimo requerido: {diametro_necesario_in:.2f} in\n"
+            f"Tubería recomendada: {tuberia_recomendada}"
+        )
+        color_estado = "#1eb851"
+
+        tuberia = combo_tuberia.get()
+        if tuberia != "":
+            area_tubo = TABLA_TUBERIA[tuberia]
+            factor_real = (area_total / area_tubo) * 100
+            if factor_real <= limite:
+                estado = "CUMPLE"
+                color_estado = "#1eb851"
+            else:
+                estado = "NO CUMPLE"
+                color_estado = "#b11921"
+            texto_resultado += (
+                f"\n\nVerificación de la tubería {tuberia}:\n"
+                f"Área interna (Tabla 4.5): {area_tubo} mm²\n"
+                f"Factor de relleno real: {factor_real:.2f} %\n"
+                f"Estado: {estado}"
+            )
+
+        resultado_label.config(text=texto_resultado, fg=color_estado)
+
+    def limpiar():
+        for entry_cant, combo_cal, entry_area in filas:
+            entry_cant.delete(0, tk.END)
+            entry_area.delete(0, tk.END)
+        resultado_label.config(text="")
+
+    botones_frame = tk.Frame(ventana)
+    botones_frame.pack(pady=10)
+
+    tk.Button(botones_frame, text="Calcular", command=calcular,
+              bg="#1eb851", fg="white", width=12).grid(row=0, column=0, padx=5)
+    tk.Button(botones_frame, text="Limpiar", command=limpiar,
+              bg="#b11921", fg="white", width=12).grid(row=0, column=1, padx=5)
+
+    ventana.bind("<Return>", lambda evento: calcular())
 
 
 def abrir_conversion_unidades():
