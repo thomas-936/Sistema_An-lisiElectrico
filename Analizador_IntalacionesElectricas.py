@@ -4,13 +4,13 @@ import math
 import sqlite3
 from datetime import datetime
 
-# Tabla de resistividad de los materiales (Ohm*mm2/m a 20 grados C)
+# Tabla de resistividad Cobre/Aluminio
 RESISTIVIDAD = {
     "Cobre": 0.0175,
     "Aluminio": 0.0282,
 }
 
-# Tabla de calibres AWG y su area en mm2 (Tabla 1 del material del curso)
+# Tabla de calibres AWG y su aréa en mm2
 TABLA_AWG = {
     "14 AWG": 2.082,
     "12 AWG": 3.307,
@@ -25,11 +25,11 @@ TABLA_AWG = {
     "4/0 AWG": 107.200,
 }
 
-# Lista ordenada de menor a mayor area, para poder recorrerla al buscar un calibre adecuado
+# Lista de calibres
 ORDEN_AWG = ["14 AWG", "12 AWG", "10 AWG", "8 AWG", "6 AWG", "4 AWG", "2 AWG",
              "1/0 AWG", "2/0 AWG", "3/0 AWG", "4/0 AWG"]
 
-# Tabla 4.4 del material: capacidad de corriente (ampacidad) segun el tipo de aislamiento
+# Tabla 4.4 Ampacidad
 TABLA_AMPACIDAD = {
     "14 AWG":  {"TW": 20,  "THW": 20,  "THHN/THWN": 25},
     "12 AWG":  {"TW": 25,  "THW": 25,  "THHN/THWN": 30},
@@ -46,7 +46,7 @@ TABLA_AMPACIDAD = {
 
 TIPOS_AISLAMIENTO = ["TW", "THW", "THHN/THWN"]
 
-# Tabla 4.5 del curso: area interna real de la tuberia conduit PVC (mm2)
+# Tabla 4.5 del curso: area interna de tubería conduit
 TABLA_TUBERIA = {
     '1/2"': 260,
     '3/4"': 438,
@@ -57,10 +57,9 @@ TABLA_TUBERIA = {
     '3"': 5350,
 }
 
-# Lista ordenada de menor a mayor area, para recorrerla al buscar una tuberia adecuada
 ORDEN_TUBERIA = ['1/2"', '3/4"', '1"', '1 1/4"', '1 1/2"', '2"', '3"']
 
-# Diametro nominal de cada tuberia en pulgadas (para el metodo de calculo del diametro minimo)
+# Diametro de tubería conduit
 TUBERIA_PULGADAS = {
     '1/2"': 0.5, '3/4"': 0.75, '1"': 1.0, '1 1/4"': 1.25,
     '1 1/2"': 1.5, '2"': 2.0, '3"': 3.0,
@@ -68,8 +67,7 @@ TUBERIA_PULGADAS = {
 
 MM2_POR_PULGADA2 = 645.2
 
-# Tabla 4.7 del curso: area de los conductores CON aislamiento TW/THW, por conductor (mm2)
-# (esta area es mas grande que el area del cobre desnudo, porque incluye el aislamiento)
+# Tabla 4.7 del curso conductores con aislamiento
 TABLA_AREA_AISLADA = {
     "14 AWG": 9.24,
     "12 AWG": 12.0,
@@ -84,7 +82,6 @@ ORDEN_CALIBRE_RELLENO = ["14 AWG", "12 AWG", "10 AWG", "8 AWG", "6 AWG", "4 AWG"
 
 
 def limite_relleno(cantidad_conductores):
-    # Factores de relleno aceptados por el RETIE (segun el material del curso)
     if cantidad_conductores == 1:
         return 55
     elif cantidad_conductores == 2:
@@ -97,8 +94,7 @@ NOMBRE_BD = "historial.db"
 
 
 def conectar_bd():
-    # Se conecta al archivo historial.db (lo crea si no existe) y se asegura
-    # de que la tabla "historial" exista
+    # Conexión a sqlite3... para guardar en el historial los resultados calculados
     conexion = sqlite3.connect(NOMBRE_BD)
     cursor = conexion.cursor()
     cursor.execute("""
@@ -139,7 +135,6 @@ def abrir_calculadora_electrica():
     frame = tk.Frame(ventana)
     frame.pack(pady=5)
 
-    # Entradas: Voltaje, Corriente, Resistencia, Potencia
     tk.Label(frame, text="Voltaje (V):", width=15, anchor="w").grid(row=0, column=0, padx=5, pady=8)
     entry_v = tk.Entry(frame, width=15)
     entry_v.grid(row=0, column=1)
@@ -200,7 +195,7 @@ def abrir_calculadora_electrica():
             return
 
         try:
-            # Calculamos los 2 valores faltantes según cuáles ya conocemos
+            # Calcular los valores que falten
             if v is not None and i is not None:
                 r = v / i
                 w = v * i
@@ -223,7 +218,6 @@ def abrir_calculadora_electrica():
                 messagebox.showwarning("Faltan datos", "Ingresa 2 valores válidos.")
                 return
 
-            # Actualizamos los campos con todos los valores
             entry_v.delete(0, tk.END)
             entry_v.insert(0, f"{v:.2f}")
             entry_i.delete(0, tk.END)
@@ -313,7 +307,6 @@ def abrir_caida_tension():
     entry_max.grid(row=8, column=1)
     entry_max.insert(0, "3")
 
-    # Orden completo de campos (incluye los Entry y los Combobox) para navegar con Enter
     campos = [entry_v, entry_p, entry_i, combo_material, entry_l,
               combo_calibre, entry_area_manual, combo_aislamiento, entry_max]
 
@@ -329,12 +322,11 @@ def abrir_caida_tension():
             campos[indice_actual - 1].focus_set()
         return "break"
 
-    # Enter mueve al siguiente campo, sin importar si es Entry o Combobox
+    # Enter para mover al siguiente campo
     for campo in campos:
         campo.bind("<Return>", mover_siguiente)
 
-    # Las flechas arriba/abajo solo mueven el foco en los Entry (casillas de texto),
-    # porque en los Combobox esas mismas flechas sirven para cambiar la opción elegida
+    # Las flechas arriba/abajo para moverse entre casillas
     campos_entry = [entry_v, entry_p, entry_i, entry_l, entry_area_manual, entry_max]
     for campo in campos_entry:
         campo.bind("<Down>", mover_siguiente)
@@ -353,8 +345,6 @@ def abrir_caida_tension():
             return None
 
     def buscar_calibre_adecuado(v, i, l, rho, max_caida, aislamiento):
-        # Recorre la tabla de menor a mayor area y devuelve el primer calibre que
-        # cumpla TANTO la caida de tension COMO la ampacidad (capacidad de corriente)
         for calibre in ORDEN_AWG:
             area = TABLA_AWG[calibre]
             caida_v = (2 * l * i * rho) / area
@@ -386,11 +376,10 @@ def abrir_caida_tension():
             if v == 0:
                 messagebox.showerror("Error", "El voltaje no puede ser 0.")
                 return
-            i = p / v  # I = P / V (monofasico, factor de potencia = 1)
+            i = p / v
 
         rho = RESISTIVIDAD[material]
 
-        # Si el usuario escribio una seccion manual en mm2, esa tiene prioridad sobre el AWG
         if area_manual is not None:
             area = area_manual
         else:
@@ -399,7 +388,6 @@ def abrir_caida_tension():
                 return
             area = TABLA_AWG[calibre]
 
-        # Formula de caida de tension por resistividad (circuito monofasico, ida y vuelta)
         caida_v = (2 * l * i * rho) / area
         porcentaje = (caida_v / v) * 100
 
@@ -410,7 +398,6 @@ def abrir_caida_tension():
             estado = "NO CUMPLE"
             color_estado = "#b11921"
 
-        # Validacion de ampacidad: solo se puede comparar si el calibre es uno de la tabla AWG
         texto_ampacidad = ""
         if calibre != "" and calibre in TABLA_AMPACIDAD:
             ampacidad = TABLA_AMPACIDAD[calibre][aislamiento]
@@ -479,7 +466,7 @@ def abrir_factor_relleno():
     frame_filas = tk.Frame(ventana)
     frame_filas.pack(pady=5)
 
-    filas = []  # cada elemento: (entry_cantidad, combo_calibre, entry_area_manual)
+    filas = []
 
     def agregar_fila():
         idx = len(filas)
@@ -499,7 +486,7 @@ def abrir_factor_relleno():
     tk.Button(ventana, text="+ Agregar otro calibre", command=agregar_fila,
               bg="#1f40c3", fg="white").pack(pady=5)
 
-    agregar_fila()  # primer renglón visible desde que se abre la ventana
+    agregar_fila()
 
     tk.Label(ventana, text="Tubería a verificar (opcional):", font=("Arial", 9)).pack(pady=(10, 0))
     combo_tuberia = ttk.Combobox(ventana, values=ORDEN_TUBERIA, width=13, state="readonly")
@@ -525,7 +512,7 @@ def abrir_factor_relleno():
         for entry_cant, combo_cal, entry_area in filas:
             cantidad = obtener(entry_cant)
             if cantidad is None:
-                continue  # renglon vacio, se ignora
+                continue
             if cantidad <= 0:
                 messagebox.showwarning("Dato inválido", "La cantidad debe ser mayor a 0.")
                 return
@@ -555,7 +542,6 @@ def abrir_factor_relleno():
 
         limite = limite_relleno(total_conductores)
 
-        # Metodo del curso: AT = Ac / Fr  ->  area minima de tuberia requerida
         area_minima_mm2 = area_total / (limite / 100)
         area_minima_in2 = area_minima_mm2 / MM2_POR_PULGADA2
         diametro_necesario_in = 2 * math.sqrt(area_minima_in2 / math.pi)
