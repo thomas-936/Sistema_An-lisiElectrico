@@ -236,6 +236,9 @@ def abrir_calculadora_electrica():
             resultado_label.config(
                 text=f"V = {v:.2f} V\nI = {i:.2f} A\nR = {r:.2f} Ω\nW = {w:.2f} W"
             )
+
+            resumen = f"V = {v:.2f} V\nI = {i:.2f} A\nR = {r:.2f} Ω\nW = {w:.2f} W"
+            guardar_historial("Calculadora Eléctrica", resumen, "-")
         except ZeroDivisionError:
             messagebox.showerror("Error", "No se puede dividir entre cero.")
 
@@ -263,7 +266,7 @@ def abrir_caida_tension():
     ventana.bind("<Escape>", lambda evento: ventana.destroy())
     ventana.focus_force()
 
-    tk.Label(ventana, text="Caída de Tensión", font=("Arial", 14, "bold")).pack(pady=10)
+    tk.Label(ventana, text="Caída de Tensión", font=("Arial", 18, "bold")).pack(pady=10)
     tk.Label(ventana, text="Circuito monofásico - Método de la resistividad",
              font=("Arial", 9)).pack(pady=(0, 15))
 
@@ -710,29 +713,54 @@ def abrir_historial():
     cargar_datos()
 
 
+def salir_programa():
+    confirmar = messagebox.askyesno("Salir", "¿Seguro que quieres salir del programa?")
+    if confirmar:
+        raiz.destroy()
+
+
 raiz = tk.Tk()
-raiz.title("Analizador de Instalaciones Eléctricas")
+raiz.title("Analizador de Instalaciones Eléctricas ⚡")
 raiz.state("zoomed")
 raiz.config(bg="#2c3e50")
 
-titulo = tk.Label(raiz, text="Analizador de Instalaciones Eléctricas",
-                   font=("Arial", 20, "bold"),
-                   bg="#2c3e50", fg="white")
-titulo.pack(pady=70)
+texto_completo = "Analizador de Instalaciones Eléctricas ⚡"
+texto_actual = ""
 
-boton1 = tk.Button(raiz, text="1. Calculadora Eléctrica", width=30, height=2, command=abrir_calculadora_electrica, bg="#1eb851", fg="white")
+def escribir(letra=0):
+    global texto_actual
+    if letra < len(texto_completo):
+        texto_actual += texto_completo[letra]
+        titulo.config(text=texto_actual)
+        raiz.after(60, lambda: escribir(letra + 1))
+
+titulo = tk.Label(raiz, text="", font=("Arial", 20, "bold"),
+                  bg="#2c3e50", fg="white")
+titulo.pack(pady=70)
+escribir()
+
+boton1 = tk.Button(raiz, text="1. Calculadora Eléctrica", width=30, height=2, command=abrir_calculadora_electrica, bg="#1eb851", fg="white",
+                   font=("Arial", 12, "bold"), relief="raised", bd=5, activebackground="#17a34a", activeforeground="white", cursor="hand2")
 boton1.pack(pady=10)
 
-boton2 = tk.Button(raiz, text="2. Caida de Tensión", width=30, height=2, command=abrir_caida_tension, bg="#c4d811", fg="white")
+boton2 = tk.Button(raiz, text="2. Caida de Tensión", width=30, height=2, command=abrir_caida_tension, bg="#c4d811", fg="white",
+                   font=("Arial", 12, "bold"), relief="raised", bd=5, activebackground="#17a34a", activeforeground="white", cursor="hand2")
 boton2.pack(pady=10)
 
-boton3 = tk.Button(raiz, text="3. Calcular Factor de Relleno", width=30, height=2, command=abrir_factor_relleno, bg="#b11921", fg="white")
+boton3 = tk.Button(raiz, text="3. Calcular Factor de Relleno", width=30, height=2, command=abrir_factor_relleno, bg="#b11921", fg="white",
+                   font=("Arial", 12, "bold"), relief="raised", bd=5, activebackground="#17a34a", activeforeground="white", cursor="hand2")
 boton3.pack(pady=10)
 
-boton4 = tk.Button(raiz, text="4. Conversión de Unidades ", width=30, height=2, command=abrir_conversion_unidades, bg="#1f40c3", fg="white")
+boton4 = tk.Button(raiz, text="4. Conversión de Unidades ", width=30, height=2, command=abrir_conversion_unidades, bg="#1f40c3", fg="white",
+                   font=("Arial", 12, "bold"), relief="raised", bd=5, activebackground="#17a34a", activeforeground="white", cursor="hand2")
 boton4.pack(pady=10)
 
-boton5 = tk.Button(raiz, text="5. Ver Historial", width=30, height=2, command=abrir_historial, bg="#6c3483", fg="white")
+boton5 = tk.Button(raiz, text="5. Historial", width=30, height=2, command=abrir_historial, bg="#6c3483", fg="white",
+                   font=("Arial", 12, "bold"), relief="raised", bd=5, activebackground="#17a34a", activeforeground="white", cursor="hand2")
 boton5.pack(pady=10)
+
+boton6 = tk.Button(raiz, text="6. Salir", width=30, height=2, command=salir_programa, bg="#7f8c8d", fg="white",
+                   font=("Arial", 12 , "bold"), relief="raised", bd=5, activebackground="#17a34a", activeforeground="white", cursor="hand2")
+boton6.pack(pady=10)
 
 raiz.mainloop()
