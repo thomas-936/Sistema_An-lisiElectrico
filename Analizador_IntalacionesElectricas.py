@@ -603,12 +603,194 @@ def abrir_factor_relleno():
     ventana.bind("<Return>", lambda evento: calcular())
 
 
+# ---------------------------------------------------------------------------
+# SECCIÓN: Conversión de Unidades (botón 4) y sus 3 sub-botones
+# ---------------------------------------------------------------------------
+
+# Factores de conversión de longitud, todo referenciado a metros (m)
+FACTORES_LONGITUD = {
+    "Milímetros (mm)": 0.001,
+    "Centímetros (cm)": 0.01,
+    "Metros (m)": 1.0,
+    "Pulgadas (in)": 0.0254,
+    "Pies (ft)": 0.3048,
+}
+
+ORDEN_UNIDADES_LONGITUD = ["Milímetros (mm)", "Centímetros (cm)", "Metros (m)",
+                            "Pulgadas (in)", "Pies (ft)"]
+
+
+def abrir_conversor_longitud():
+    ventana = tk.Toplevel(raiz)
+    ventana.title("Conversión entre Unidades")
+    ventana.geometry("420x360")
+    ventana.bind("<Escape>", lambda evento: ventana.destroy())
+    ventana.focus_force()
+
+    tk.Label(ventana, text="Conversión entre Unidades", font=("Arial", 14, "bold")).pack(pady=10)
+    tk.Label(ventana, text="Conversión de longitud (mm, cm, m, in, ft)",
+             font=("Arial", 9)).pack(pady=(0, 15))
+
+    frame = tk.Frame(ventana)
+    frame.pack(pady=5)
+
+    tk.Label(frame, text="Valor:", width=14, anchor="w").grid(row=0, column=0, padx=5, pady=8)
+    entry_valor = tk.Entry(frame, width=15)
+    entry_valor.grid(row=0, column=1)
+
+    tk.Label(frame, text="Unidad de origen:", width=14, anchor="w").grid(row=1, column=0, padx=5, pady=8)
+    combo_origen = ttk.Combobox(frame, values=ORDEN_UNIDADES_LONGITUD, width=18, state="readonly")
+    combo_origen.grid(row=1, column=1)
+    combo_origen.current(2)
+
+    tk.Label(frame, text="Unidad de destino:", width=14, anchor="w").grid(row=2, column=0, padx=5, pady=8)
+    combo_destino = ttk.Combobox(frame, values=ORDEN_UNIDADES_LONGITUD, width=18, state="readonly")
+    combo_destino.grid(row=2, column=1)
+    combo_destino.current(3)
+
+    resultado_label = tk.Label(ventana, text="", font=("Arial", 12, "bold"), fg="#1eb851", justify="left")
+    resultado_label.pack(pady=20)
+
+    def obtener(entry):
+        texto = entry.get().strip()
+        if texto == "":
+            return None
+        try:
+            return float(texto)
+        except ValueError:
+            return None
+
+    def convertir():
+        valor = obtener(entry_valor)
+        origen = combo_origen.get()
+        destino = combo_destino.get()
+
+        if valor is None or origen == "" or destino == "":
+            messagebox.showwarning("Faltan datos", "Ingresa el valor y selecciona ambas unidades.")
+            return
+
+        valor_en_metros = valor * FACTORES_LONGITUD[origen]
+        resultado = valor_en_metros / FACTORES_LONGITUD[destino]
+
+        texto_resultado = f"{valor:g} {origen} = {resultado:.4f} {destino}"
+        resultado_label.config(text=texto_resultado)
+        guardar_historial("Conversión de Unidades", texto_resultado, "-")
+
+    def limpiar():
+        entry_valor.delete(0, tk.END)
+        resultado_label.config(text="")
+
+    botones_frame = tk.Frame(ventana)
+    botones_frame.pack(pady=10)
+
+    tk.Button(botones_frame, text="Convertir", command=convertir,
+              bg="#1eb851", fg="white", width=12).grid(row=0, column=0, padx=5)
+    tk.Button(botones_frame, text="Limpiar", command=limpiar,
+              bg="#b11921", fg="white", width=12).grid(row=0, column=1, padx=5)
+
+    ventana.bind("<Return>", lambda evento: convertir())
+
+
+def abrir_tabla_calibres():
+    ventana = tk.Toplevel(raiz)
+    ventana.title("Tabla de Calibres AWG")
+    ventana.geometry("640x460")
+    ventana.bind("<Escape>", lambda evento: ventana.destroy())
+    ventana.focus_force()
+
+    tk.Label(ventana, text="Tabla de Calibres AWG", font=("Arial", 14, "bold")).pack(pady=10)
+    tk.Label(ventana, text="Área de sección transversal y ampacidad por tipo de aislamiento (Tabla 4.4)",
+             font=("Arial", 9)).pack(pady=(0, 10))
+
+    frame_tabla = tk.Frame(ventana)
+    frame_tabla.pack(fill="both", expand=True, padx=10, pady=5)
+
+    columnas = ("calibre", "area", "tw", "thw", "thhn")
+    tabla = ttk.Treeview(frame_tabla, columns=columnas, show="headings", height=12)
+    tabla.heading("calibre", text="Calibre AWG")
+    tabla.heading("area", text="Área (mm²)")
+    tabla.heading("tw", text="TW (A)")
+    tabla.heading("thw", text="THW (A)")
+    tabla.heading("thhn", text="THHN/THWN (A)")
+    tabla.column("calibre", width=110, anchor="center")
+    tabla.column("area", width=110, anchor="center")
+    tabla.column("tw", width=90, anchor="center")
+    tabla.column("thw", width=90, anchor="center")
+    tabla.column("thhn", width=130, anchor="center")
+    tabla.pack(side="left", fill="both", expand=True)
+
+    scrollbar = tk.Scrollbar(frame_tabla, orient="vertical", command=tabla.yview)
+    tabla.configure(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side="right", fill="y")
+
+    for calibre in ORDEN_AWG:
+        ampacidad = TABLA_AMPACIDAD[calibre]
+        tabla.insert("", "end", values=(
+            calibre,
+            f"{TABLA_AWG[calibre]:.3f}",
+            ampacidad["TW"],
+            ampacidad["THW"],
+            ampacidad["THHN/THWN"],
+        ))
+
+    tk.Button(ventana, text="Cerrar", command=ventana.destroy,
+              bg="#7f8c8d", fg="white", width=12).pack(pady=10)
+
+
+def abrir_tabla_tuberias():
+    ventana = tk.Toplevel(raiz)
+    ventana.title("Tabla de Tuberías Conduit")
+    ventana.geometry("420x400")
+    ventana.bind("<Escape>", lambda evento: ventana.destroy())
+    ventana.focus_force()
+
+    tk.Label(ventana, text="Tabla de Tuberías Conduit", font=("Arial", 14, "bold")).pack(pady=10)
+    tk.Label(ventana, text="Área interna disponible por tamaño de tubería (Tabla 4.5)",
+             font=("Arial", 9)).pack(pady=(0, 10))
+
+    frame_tabla = tk.Frame(ventana)
+    frame_tabla.pack(fill="both", expand=True, padx=10, pady=5)
+
+    columnas = ("tuberia", "area")
+    tabla = ttk.Treeview(frame_tabla, columns=columnas, show="headings", height=10)
+    tabla.heading("tuberia", text="Tubería")
+    tabla.heading("area", text="Área interna (mm²)")
+    tabla.column("tuberia", width=180, anchor="center")
+    tabla.column("area", width=180, anchor="center")
+    tabla.pack(side="left", fill="both", expand=True)
+
+    scrollbar = tk.Scrollbar(frame_tabla, orient="vertical", command=tabla.yview)
+    tabla.configure(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side="right", fill="y")
+
+    for tuberia in ORDEN_TUBERIA:
+        tabla.insert("", "end", values=(tuberia, TABLA_TUBERIA[tuberia]))
+
+    tk.Button(ventana, text="Cerrar", command=ventana.destroy,
+              bg="#7f8c8d", fg="white", width=12).pack(pady=10)
+
+
 def abrir_conversion_unidades():
     ventana = tk.Toplevel(raiz)
-    ventana.title("Conversion de Unidades")
-    ventana.geometry("400x300")
-    tk.Label(ventana, text="Conversion de Unidades", font=("Arial", 14, "bold")).pack(pady=20)
-    tk.Label(ventana, text="(Aqui va el contenido de esta seccion)").pack()
+    ventana.title("Conversión de Unidades")
+    ventana.geometry("420x400")
+    ventana.bind("<Escape>", lambda evento: ventana.destroy())
+    ventana.focus_force()
+
+    tk.Label(ventana, text="Conversión de Unidades", font=("Arial", 16, "bold")).pack(pady=25)
+    tk.Label(ventana, text="Selecciona una opción:", font=("Arial", 10)).pack(pady=(0, 20))
+
+    tk.Button(ventana, text="1. Conversión entre Unidades", width=30, height=2, command=abrir_conversor_longitud,
+               bg="#1eb851", fg="white", font=("Arial", 11, "bold"), relief="raised", bd=4,
+               activebackground="#17a34a", activeforeground="white", cursor="hand2").pack(pady=8)
+
+    tk.Button(ventana, text="2. Tabla de Calibres", width=30, height=2, command=abrir_tabla_calibres,
+               bg="#c4d811", fg="white", font=("Arial", 11, "bold"), relief="raised", bd=4,
+               activebackground="#17a34a", activeforeground="white", cursor="hand2").pack(pady=8)
+
+    tk.Button(ventana, text="3. Tuberías", width=30, height=2, command=abrir_tabla_tuberias,
+               bg="#1f40c3", fg="white", font=("Arial", 11, "bold"), relief="raised", bd=4,
+               activebackground="#17a34a", activeforeground="white", cursor="hand2").pack(pady=8)
 
 
 def abrir_historial():
