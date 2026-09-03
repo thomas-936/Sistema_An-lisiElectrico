@@ -256,84 +256,59 @@ def abrir_calculadora_electrica():
 def abrir_caida_tension():
     ventana = tk.Toplevel(raiz)
     ventana.title("Caida de Tension")
-    ventana.geometry("480x680")
+    ventana.geometry("520x760")
     ventana.bind("<Escape>", lambda evento: ventana.destroy())
     ventana.focus_force()
 
-    tk.Label(ventana, text="Caída de Tensión", font=("Arial", 18, "bold")).pack(pady=10)
+    tk.Label(ventana, text="Caída de Tensión", font=("Arial", 14, "bold")).pack(pady=10)
     tk.Label(ventana, text="Circuito monofásico - Método de la resistividad",
-             font=("Arial", 9)).pack(pady=(0, 15))
+             font=("Arial", 9)).pack(pady=(0, 10))
 
-    frame = tk.Frame(ventana)
-    frame.pack(pady=5)
+    # ---------- Datos comunes a ambos tipos de calculo ----------
+    frame_comun = tk.Frame(ventana)
+    frame_comun.pack(pady=5)
 
-    tk.Label(frame, text="Voltaje del sistema (V):", width=24, anchor="w").grid(row=0, column=0, padx=5, pady=6)
-    entry_v = tk.Entry(frame, width=15)
+    tk.Label(frame_comun, text="Voltaje del sistema (V):", width=24, anchor="w").grid(row=0, column=0, padx=5, pady=6)
+    entry_v = tk.Entry(frame_comun, width=15)
     entry_v.grid(row=0, column=1)
 
-    tk.Label(frame, text="Potencia de la carga (W):", width=24, anchor="w").grid(row=1, column=0, padx=5, pady=6)
-    entry_p = tk.Entry(frame, width=15)
+    tk.Label(frame_comun, text="Potencia de la carga (W):", width=24, anchor="w").grid(row=1, column=0, padx=5, pady=6)
+    entry_p = tk.Entry(frame_comun, width=15)
     entry_p.grid(row=1, column=1)
 
-    tk.Label(frame, text="Corriente (A), si ya la conoces:", width=24, anchor="w").grid(row=2, column=0, padx=5, pady=6)
-    entry_i = tk.Entry(frame, width=15)
+    tk.Label(frame_comun, text="Corriente (A), si ya la conoces:", width=24, anchor="w").grid(row=2, column=0, padx=5, pady=6)
+    entry_i = tk.Entry(frame_comun, width=15)
     entry_i.grid(row=2, column=1)
 
-    tk.Label(frame, text="Material del conductor:", width=24, anchor="w").grid(row=3, column=0, padx=5, pady=6)
-    combo_material = ttk.Combobox(frame, values=list(RESISTIVIDAD.keys()), width=13, state="readonly")
+    tk.Label(frame_comun, text="Material del conductor:", width=24, anchor="w").grid(row=3, column=0, padx=5, pady=6)
+    combo_material = ttk.Combobox(frame_comun, values=list(RESISTIVIDAD.keys()), width=13, state="readonly")
     combo_material.grid(row=3, column=1)
     combo_material.current(0)
 
-    tk.Label(frame, text="Longitud del circuito (m):", width=24, anchor="w").grid(row=4, column=0, padx=5, pady=6)
-    entry_l = tk.Entry(frame, width=15)
-    entry_l.grid(row=4, column=1)
-
-    tk.Label(frame, text="Calibre del conductor (AWG):", width=24, anchor="w").grid(row=5, column=0, padx=5, pady=6)
-    combo_calibre = ttk.Combobox(frame, values=ORDEN_AWG, width=13, state="readonly")
-    combo_calibre.grid(row=5, column=1)
-    combo_calibre.current(2)
-
-    tk.Label(frame, text="O sección directa (mm²):", width=24, anchor="w").grid(row=6, column=0, padx=5, pady=6)
-    entry_area_manual = tk.Entry(frame, width=15)
-    entry_area_manual.grid(row=6, column=1)
-
-    tk.Label(frame, text="Tipo de aislamiento:", width=24, anchor="w").grid(row=7, column=0, padx=5, pady=6)
-    combo_aislamiento = ttk.Combobox(frame, values=TIPOS_AISLAMIENTO, width=13, state="readonly")
-    combo_aislamiento.grid(row=7, column=1)
+    tk.Label(frame_comun, text="Tipo de aislamiento:", width=24, anchor="w").grid(row=4, column=0, padx=5, pady=6)
+    combo_aislamiento = ttk.Combobox(frame_comun, values=TIPOS_AISLAMIENTO, width=13, state="readonly")
+    combo_aislamiento.grid(row=4, column=1)
     combo_aislamiento.current(1)
 
-    tk.Label(frame, text="Caída de tensión máx. permitida (%):", width=24, anchor="w").grid(row=8, column=0, padx=5, pady=6)
-    entry_max = tk.Entry(frame, width=15)
-    entry_max.grid(row=8, column=1)
-    entry_max.insert(0, "3")
+    campos_comunes = [entry_v, entry_p, entry_i, combo_material, combo_aislamiento]
 
-    campos = [entry_v, entry_p, entry_i, combo_material, entry_l,
-              combo_calibre, entry_area_manual, combo_aislamiento, entry_max]
-
-    def mover_siguiente(evento):
-        indice_actual = campos.index(evento.widget)
-        if indice_actual < len(campos) - 1:
-            campos[indice_actual + 1].focus_set()
+    def mover_siguiente_comun(evento):
+        indice_actual = campos_comunes.index(evento.widget)
+        if indice_actual < len(campos_comunes) - 1:
+            campos_comunes[indice_actual + 1].focus_set()
         return "break"
 
-    def mover_anterior(evento):
-        indice_actual = campos.index(evento.widget)
+    def mover_anterior_comun(evento):
+        indice_actual = campos_comunes.index(evento.widget)
         if indice_actual > 0:
-            campos[indice_actual - 1].focus_set()
+            campos_comunes[indice_actual - 1].focus_set()
         return "break"
 
-    # Enter para mover al siguiente campo
-    for campo in campos:
-        campo.bind("<Return>", mover_siguiente)
-
-    # Las flechas arriba/abajo para moverse entre casillas
-    campos_entry = [entry_v, entry_p, entry_i, entry_l, entry_area_manual, entry_max]
-    for campo in campos_entry:
-        campo.bind("<Down>", mover_siguiente)
-        campo.bind("<Up>", mover_anterior)
-
-    resultado_label = tk.Label(ventana, text="", font=("Arial", 10), fg="#1eb851", justify="left")
-    resultado_label.pack(pady=15)
+    for campo in campos_comunes:
+        campo.bind("<Return>", mover_siguiente_comun)
+    for campo in [entry_v, entry_p, entry_i]:
+        campo.bind("<Down>", mover_siguiente_comun)
+        campo.bind("<Up>", mover_anterior_comun)
 
     def obtener(entry):
         texto = entry.get().strip()
@@ -343,6 +318,23 @@ def abrir_caida_tension():
             return float(texto)
         except ValueError:
             return None
+
+    def obtener_corriente():
+        v = obtener(entry_v)
+        p = obtener(entry_p)
+        i = obtener(entry_i)
+        if v is None:
+            messagebox.showwarning("Faltan datos", "Ingresa el voltaje del sistema.")
+            return None, None
+        if i is None:
+            if p is None:
+                messagebox.showwarning("Faltan datos", "Ingresa la potencia o la corriente de la carga.")
+                return None, None
+            if v == 0:
+                messagebox.showerror("Error", "El voltaje no puede ser 0.")
+                return None, None
+            i = p / v  # I = P / V (monofasico, factor de potencia = 1)
+        return v, i
 
     def buscar_calibre_adecuado(v, i, l, rho, max_caida, aislamiento):
         for calibre in ORDEN_AWG:
@@ -354,10 +346,63 @@ def abrir_caida_tension():
                 return calibre
         return "Ninguno de la tabla cumple, se necesita un calibre mayor"
 
-    def calcular():
-        v = obtener(entry_v)
-        p = obtener(entry_p)
-        i = obtener(entry_i)
+    notebook = ttk.Notebook(ventana)
+    notebook.pack(fill="both", expand=True, padx=10, pady=10)
+
+    tab_derivado = tk.Frame(notebook)
+    notebook.add(tab_derivado, text="Circuito Derivado")
+
+    tk.Label(tab_derivado, text="Tramo del tablero de distribución hasta la carga",
+             font=("Arial", 9)).pack(pady=(10, 5))
+
+    frame_d = tk.Frame(tab_derivado)
+    frame_d.pack(pady=5)
+
+    tk.Label(frame_d, text="Longitud del circuito (m):", width=24, anchor="w").grid(row=0, column=0, padx=5, pady=6)
+    entry_l = tk.Entry(frame_d, width=15)
+    entry_l.grid(row=0, column=1)
+
+    tk.Label(frame_d, text="Calibre del conductor (AWG):", width=24, anchor="w").grid(row=1, column=0, padx=5, pady=6)
+    combo_calibre = ttk.Combobox(frame_d, values=ORDEN_AWG, width=13, state="readonly")
+    combo_calibre.grid(row=1, column=1)
+    combo_calibre.current(2)
+
+    tk.Label(frame_d, text="O sección directa (mm²):", width=24, anchor="w").grid(row=2, column=0, padx=5, pady=6)
+    entry_area_manual = tk.Entry(frame_d, width=15)
+    entry_area_manual.grid(row=2, column=1)
+
+    tk.Label(frame_d, text="Caída de tensión máx. permitida (%):", width=24, anchor="w").grid(row=3, column=0, padx=5, pady=6)
+    entry_max = tk.Entry(frame_d, width=15)
+    entry_max.grid(row=3, column=1)
+    entry_max.insert(0, "3")
+
+    campos_d = [entry_l, combo_calibre, entry_area_manual, entry_max]
+
+    def mover_siguiente_d(evento):
+        idx = campos_d.index(evento.widget)
+        if idx < len(campos_d) - 1:
+            campos_d[idx + 1].focus_set()
+        return "break"
+
+    def mover_anterior_d(evento):
+        idx = campos_d.index(evento.widget)
+        if idx > 0:
+            campos_d[idx - 1].focus_set()
+        return "break"
+
+    for campo in campos_d:
+        campo.bind("<Return>", mover_siguiente_d)
+    for campo in [entry_l, entry_area_manual, entry_max]:
+        campo.bind("<Down>", mover_siguiente_d)
+        campo.bind("<Up>", mover_anterior_d)
+
+    resultado_derivado = tk.Label(tab_derivado, text="", font=("Arial", 10), fg="#1eb851", justify="left")
+    resultado_derivado.pack(pady=15)
+
+    def calcular_derivado():
+        v, i = obtener_corriente()
+        if v is None:
+            return
         l = obtener(entry_l)
         max_caida = obtener(entry_max)
         material = combo_material.get()
@@ -365,18 +410,9 @@ def abrir_caida_tension():
         aislamiento = combo_aislamiento.get()
         area_manual = obtener(entry_area_manual)
 
-        if v is None or l is None or max_caida is None or material == "" or aislamiento == "":
-            messagebox.showwarning("Faltan datos", "Completa voltaje, longitud, material, aislamiento y caída máxima.")
+        if l is None or max_caida is None or material == "" or aislamiento == "":
+            messagebox.showwarning("Faltan datos", "Completa longitud, material, aislamiento y caída máxima.")
             return
-
-        if i is None:
-            if p is None:
-                messagebox.showwarning("Faltan datos", "Ingresa la potencia o la corriente de la carga.")
-                return
-            if v == 0:
-                messagebox.showerror("Error", "El voltaje no puede ser 0.")
-                return
-            i = p / v
 
         rho = RESISTIVIDAD[material]
 
@@ -422,28 +458,162 @@ def abrir_caida_tension():
         if sugerencia:
             texto_resultado += f"\nCalibre sugerido: {sugerencia}"
 
-        resultado_label.config(text=texto_resultado, fg=color_estado)
-        guardar_historial("Caída de Tensión", texto_resultado, estado)
+        resultado_derivado.config(text=texto_resultado, fg=color_estado)
+        guardar_historial("Caída de Tensión - Circuito Derivado", texto_resultado, estado)
 
-    def limpiar():
-        entry_v.delete(0, tk.END)
-        entry_p.delete(0, tk.END)
-        entry_i.delete(0, tk.END)
+    def limpiar_derivado():
         entry_l.delete(0, tk.END)
         entry_area_manual.delete(0, tk.END)
         entry_max.delete(0, tk.END)
         entry_max.insert(0, "3")
-        resultado_label.config(text="")
+        resultado_derivado.config(text="")
 
-    botones_frame = tk.Frame(ventana)
-    botones_frame.pack(pady=10)
-
-    tk.Button(botones_frame, text="Calcular", command=calcular,
+    botones_d = tk.Frame(tab_derivado)
+    botones_d.pack(pady=10)
+    tk.Button(botones_d, text="Calcular", command=calcular_derivado,
               bg="#1eb851", fg="white", width=12).grid(row=0, column=0, padx=5)
-    tk.Button(botones_frame, text="Limpiar", command=limpiar,
+    tk.Button(botones_d, text="Limpiar", command=limpiar_derivado,
               bg="#b11921", fg="white", width=12).grid(row=0, column=1, padx=5)
 
-    ventana.bind("<Return>", lambda evento: calcular())
+    tab_completo = tk.Frame(notebook)
+    notebook.add(tab_completo, text="Sistema Completo")
+
+    tk.Label(tab_completo, text="Suma del alimentador (medidor → tablero) más el circuito derivado",
+             font=("Arial", 9)).pack(pady=(10, 5))
+
+    frame_c = tk.Frame(tab_completo)
+    frame_c.pack(pady=5)
+
+    tk.Label(frame_c, text="— Alimentador —", font=("Arial", 9, "bold")).grid(row=0, column=0, columnspan=2, pady=(5, 2))
+
+    tk.Label(frame_c, text="Longitud alimentador (m):", width=24, anchor="w").grid(row=1, column=0, padx=5, pady=6)
+    entry_l1 = tk.Entry(frame_c, width=15)
+    entry_l1.grid(row=1, column=1)
+
+    tk.Label(frame_c, text="Calibre alimentador (AWG):", width=24, anchor="w").grid(row=2, column=0, padx=5, pady=6)
+    combo_calibre1 = ttk.Combobox(frame_c, values=ORDEN_AWG, width=13, state="readonly")
+    combo_calibre1.grid(row=2, column=1)
+    combo_calibre1.current(4)
+
+    tk.Label(frame_c, text="O sección directa (mm²):", width=24, anchor="w").grid(row=3, column=0, padx=5, pady=6)
+    entry_area1_manual = tk.Entry(frame_c, width=15)
+    entry_area1_manual.grid(row=3, column=1)
+
+    tk.Label(frame_c, text="— Circuito Derivado —", font=("Arial", 9, "bold")).grid(row=4, column=0, columnspan=2, pady=(12, 2))
+
+    tk.Label(frame_c, text="Longitud derivado (m):", width=24, anchor="w").grid(row=5, column=0, padx=5, pady=6)
+    entry_l2 = tk.Entry(frame_c, width=15)
+    entry_l2.grid(row=5, column=1)
+
+    tk.Label(frame_c, text="Calibre derivado (AWG):", width=24, anchor="w").grid(row=6, column=0, padx=5, pady=6)
+    combo_calibre2 = ttk.Combobox(frame_c, values=ORDEN_AWG, width=13, state="readonly")
+    combo_calibre2.grid(row=6, column=1)
+    combo_calibre2.current(2)
+
+    tk.Label(frame_c, text="O sección directa (mm²):", width=24, anchor="w").grid(row=7, column=0, padx=5, pady=6)
+    entry_area2_manual = tk.Entry(frame_c, width=15)
+    entry_area2_manual.grid(row=7, column=1)
+
+    tk.Label(frame_c, text="Caída de tensión máx. TOTAL (%):", width=24, anchor="w").grid(row=8, column=0, padx=5, pady=(12, 6))
+    entry_max_total = tk.Entry(frame_c, width=15)
+    entry_max_total.grid(row=8, column=1, pady=(12, 6))
+    entry_max_total.insert(0, "5")
+
+    campos_c = [entry_l1, combo_calibre1, entry_area1_manual,
+                entry_l2, combo_calibre2, entry_area2_manual, entry_max_total]
+
+    def mover_siguiente_c(evento):
+        idx = campos_c.index(evento.widget)
+        if idx < len(campos_c) - 1:
+            campos_c[idx + 1].focus_set()
+        return "break"
+
+    def mover_anterior_c(evento):
+        idx = campos_c.index(evento.widget)
+        if idx > 0:
+            campos_c[idx - 1].focus_set()
+        return "break"
+
+    for campo in campos_c:
+        campo.bind("<Return>", mover_siguiente_c)
+    for campo in [entry_l1, entry_area1_manual, entry_l2, entry_area2_manual, entry_max_total]:
+        campo.bind("<Down>", mover_siguiente_c)
+        campo.bind("<Up>", mover_anterior_c)
+
+    resultado_completo = tk.Label(tab_completo, text="", font=("Arial", 10), fg="#1eb851", justify="left")
+    resultado_completo.pack(pady=15)
+
+    def calcular_completo():
+        v, i = obtener_corriente()
+        if v is None:
+            return
+        l1 = obtener(entry_l1)
+        l2 = obtener(entry_l2)
+        max_total = obtener(entry_max_total)
+        material = combo_material.get()
+        calibre1 = combo_calibre1.get()
+        calibre2 = combo_calibre2.get()
+        area1_manual = obtener(entry_area1_manual)
+        area2_manual = obtener(entry_area2_manual)
+
+        if l1 is None or l2 is None or max_total is None or material == "":
+            messagebox.showwarning("Faltan datos", "Completa las longitudes, el material y la caída máxima total.")
+            return
+
+        rho = RESISTIVIDAD[material]
+
+        area1 = area1_manual if area1_manual is not None else TABLA_AWG.get(calibre1)
+        area2 = area2_manual if area2_manual is not None else TABLA_AWG.get(calibre2)
+        if area1 is None or area2 is None:
+            messagebox.showwarning("Faltan datos", "Selecciona un calibre o escribe la sección en ambos tramos.")
+            return
+
+        caida1 = (2 * l1 * i * rho) / area1
+        porcentaje1 = (caida1 / v) * 100
+
+        caida2 = (2 * l2 * i * rho) / area2
+        porcentaje2 = (caida2 / v) * 100
+
+        porcentaje_total = porcentaje1 + porcentaje2
+
+        v_en_tablero = v - caida1
+        v_en_carga = v_en_tablero - caida2
+
+        if porcentaje_total <= max_total:
+            estado = "CUMPLE"
+            color_estado = "#1eb851"
+        else:
+            estado = "NO CUMPLE"
+            color_estado = "#b11921"
+
+        texto_resultado = (
+            f"Corriente: {i:.2f} A\n\n"
+            f"Alimentador: caída = {caida1:.2f} V ({porcentaje1:.2f} %)\n"
+            f"Voltaje en el tablero: {v_en_tablero:.2f} V\n\n"
+            f"Circuito derivado: caída = {caida2:.2f} V ({porcentaje2:.2f} %)\n"
+            f"Voltaje en la carga: {v_en_carga:.2f} V\n\n"
+            f"Caída total: {porcentaje_total:.2f} % (máximo permitido: {max_total:.2f} %)\n"
+            f"Estado: {estado}"
+        )
+
+        resultado_completo.config(text=texto_resultado, fg=color_estado)
+        guardar_historial("Caída de Tensión - Sistema Completo", texto_resultado, estado)
+
+    def limpiar_completo():
+        entry_l1.delete(0, tk.END)
+        entry_area1_manual.delete(0, tk.END)
+        entry_l2.delete(0, tk.END)
+        entry_area2_manual.delete(0, tk.END)
+        entry_max_total.delete(0, tk.END)
+        entry_max_total.insert(0, "5")
+        resultado_completo.config(text="")
+
+    botones_c = tk.Frame(tab_completo)
+    botones_c.pack(pady=10)
+    tk.Button(botones_c, text="Calcular", command=calcular_completo,
+              bg="#1eb851", fg="white", width=12).grid(row=0, column=0, padx=5)
+    tk.Button(botones_c, text="Limpiar", command=limpiar_completo,
+              bg="#b11921", fg="white", width=12).grid(row=0, column=1, padx=5)
 
 
 def abrir_factor_relleno():
@@ -602,12 +772,6 @@ def abrir_factor_relleno():
 
     ventana.bind("<Return>", lambda evento: calcular())
 
-
-# ---------------------------------------------------------------------------
-# SECCIÓN: Conversión de Unidades (botón 4) y sus 3 sub-botones
-# ---------------------------------------------------------------------------
-
-# Factores de conversión de longitud, todo referenciado a metros (m)
 FACTORES_LONGITUD = {
     "Milímetros (mm)": 0.001,
     "Centímetros (cm)": 0.01,
@@ -827,7 +991,7 @@ def abrir_historial():
     detalle_texto = tk.Text(ventana, height=8, wrap="word", font=("Consolas", 9))
     detalle_texto.pack(fill="x", padx=10, pady=5)
 
-    registros = {}  # id -> resumen completo, para mostrar el detalle sin volver a consultar la BD
+    registros = {}
 
     def cargar_datos():
         for fila in tabla.get_children():
